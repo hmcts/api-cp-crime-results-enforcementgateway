@@ -1,10 +1,10 @@
 # Enforcement Hearing Gateway (API spec)
 
-`api-cp-crime-caseingestion-enforcementgateway`
+`api-cp-crime-results-enforcementgateway`
 
 OpenAPI specification for the **CP ↔ Libra/GoB enforcement hearing gateway**. It documents the
 contract used by the runtime service
-[`service-cp-crime-caseingestion-enforcementgateway`](https://github.com/hmcts/service-cp-crime-caseingestion-enforcementgateway):
+[`service-cp-crime-results-enforcementgateway`](https://github.com/hmcts/service-cp-crime-results-enforcementgateway):
 
 - **Hearing confirmation:** the `confirmedHearing` payload CP sends to Libra (GoB) when an enforcement
   case is allocated to a court hearing.
@@ -23,9 +23,12 @@ dependency, following the established `api-cp-crime-*` / `service-cp-crime-*` pa
 ## Naming
 
 Follows the HMCTS api-template convention `api-{source}-[case-type]-{business-domain}-{entity}`:
-`cp` · `crime` · **`caseingestion`** · `enforcementgateway`. The `caseingestion` segment reflects
-the **owning team** (cp-case-ingestion-and-material, who hold all CP↔Libra enforcement integration,
-inbound and outbound) rather than the literal direction of the call.
+`cp` · `crime` · **`results`** · `enforcementgateway` — placing it in the results /
+enforcement-integration domain. Owned by the **cp-case-ingestion-and-material** team.
+
+> Note: `results` is not currently in the documented `business-domain` enumeration in
+> `api-hmcts-crime-template` (`caseingestion` · `casematerial` · `caseadmin` · `casehearing` ·
+> `schedulingandlisting`); confirm with the API governance owners if strict conformance is required.
 
 ## Build
 

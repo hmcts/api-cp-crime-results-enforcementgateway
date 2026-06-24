@@ -2,10 +2,10 @@ openapi: 3.0.0
 info:
   title: Enforcement Hearing Gateway API
   description: >-
-    CCT-1222 (Enforcement 2025) — contract for confirming enforcement hearings from Common Platform
-    to Libra/GoB. Covers FR09 (hearing confirmation on allocation) and FR11 (hearing updates on
-    amendment). DRAFT: the authoritative endpoint contract is Libra-owned and must be reconciled
-    (see CCT-1222 Listing and Hearing Confirmation Design §11).
+    Contract for confirming enforcement hearings from Common Platform to Libra/GoB: hearing
+    confirmation when a case is allocated to a court hearing, and hearing updates when an
+    allocation is amended. DRAFT: the authoritative endpoint contract is Libra-owned and must
+    be reconciled.
   version: 0.1.0
   contact:
     email: no-reply@hmcts.com
@@ -15,15 +15,15 @@ info:
 
 servers:
   - description: Draft — to be confirmed (Libra endpoint via APIM)
-    url: https://virtserver.swaggerhub.com/HMCTS-DTS/api-cp-crime-caseingestion-enforcementgateway/0.1.0
+    url: https://virtserver.swaggerhub.com/HMCTS-DTS/api-cp-crime-results-enforcementgateway/0.1.0
 
 paths:
   /confirmedHearing:
     post:
       summary: Confirm an enforcement hearing to Libra (GoB)
       description: >-
-        Sent by Common Platform when an enforcement case is allocated to a court hearing (FR09) or an
-        existing allocation is amended (FR11). DRAFT contract.
+        Sent by Common Platform when an enforcement case is allocated to a court hearing, or an
+        existing allocation is amended. DRAFT contract.
       operationId: postConfirmedHearing
       tags:
         - enforcement-hearing
