@@ -1,58 +1,45 @@
 openapi: 3.0.0
-servers:
-  - description: API Marketplace api - mocking example api
-    url: https://virtserver.swaggerhub.com/HMCTS-DTS/api-hmcts-crime-template/1.0.0
-
 info:
-  title: API Marketplace api - example api
-  description: API Marketplace api - simple example
-  version: 1.0.0
+  title: Enforcement Hearing Gateway API
+  description: >-
+    CCT-1222 (Enforcement 2025) — contract for confirming enforcement hearings from Common Platform
+    to Libra/GoB. Covers FR09 (hearing confirmation on allocation) and FR11 (hearing updates on
+    amendment). DRAFT: the authoritative endpoint contract is Libra-owned and must be reconciled
+    (see CCT-1222 Listing and Hearing Confirmation Design §11).
+  version: 0.1.0
   contact:
     email: no-reply@hmcts.com
   license:
     name: MIT
     url: 'https://opensource.org/licenses/MIT'
 
+servers:
+  - description: Draft — to be confirmed (Libra endpoint via APIM)
+    url: https://virtserver.swaggerhub.com/HMCTS-DTS/api-cp-crime-caseingestion-enforcementgateway/0.1.0
+
 paths:
-  /:
-    get:
-      description: Root endpoint
-      operationId: getRoot
+  /confirmedHearing:
+    post:
+      summary: Confirm an enforcement hearing to Libra (GoB)
+      description: >-
+        Sent by Common Platform when an enforcement case is allocated to a court hearing (FR09) or an
+        existing allocation is amended (FR11). DRAFT contract.
+      operationId: postConfirmedHearing
       tags:
-        - root
-
+        - enforcement-hearing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmedHearing"
       responses:
         '200':
-          description: OK
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Hello
-
-  /example/{example_id}:
-    get:
-      description: Get example for example_id
-      operationId: getExampleByExampleId
-      tags:
-        - examples
-      parameters:
-        - in: path
-          name: example_id
-          required: true
-          description: Unique id for the example - long
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description:  Examples found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ExampleResponse"
+          description: Hearing confirmation accepted by Libra
+        '202':
+          description: Hearing confirmation accepted for processing
         '400':
-          description: Bad input parameter
+          description: Invalid payload
           content:
             application/json:
               schema:
@@ -60,18 +47,32 @@ paths:
 
 components:
   schemas:
-    ExampleResponse:
-      description: Details of examples associated with the example id
+    ConfirmedHearing:
+      description: Confirmed enforcement hearing details sent to Libra/GoB.
       type: object
+      required:
+        - caseUrn
+        - courtHearingLocation
+        - dateOfHearing
+        - timeOfHearing
       properties:
-        exampleId:
-          description: Id of the example - long
-          type: integer
-          format: int64
-        exampleText:
-          description: Information associated with the example id
+        caseUrn:
+          description: CP-minted case URN for the enforcement case.
           type: string
-          example: "Some text"
+          example: "12GD3456789"
+        courtHearingLocation:
+          description: Court hearing location OU code.
+          type: string
+          example: "B01LY"
+        dateOfHearing:
+          description: Allocated hearing date.
+          type: string
+          format: date
+          example: "2026-07-15"
+        timeOfHearing:
+          description: Allocated hearing start time (HH:MM).
+          type: string
+          example: "10:00"
 
     ErrorResponse:
       type: object
