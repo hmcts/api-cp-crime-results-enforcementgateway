@@ -2,13 +2,13 @@
 
 `api-cp-crime-caseingestion-enforcementgateway`
 
-OpenAPI specification for the **CP ↔ Libra/GoB enforcement hearing gateway** (Enforcement 2025 /
-Jira **CCT-1222**). It documents the contract used by the runtime service
+OpenAPI specification for the **CP ↔ Libra/GoB enforcement hearing gateway**. It documents the
+contract used by the runtime service
 [`service-cp-crime-caseingestion-enforcementgateway`](https://github.com/hmcts/service-cp-crime-caseingestion-enforcementgateway):
 
-- **FR09 — hearing confirmation:** the `confirmedHearing` payload CP sends to Libra (GoB) when an
-  enforcement case is allocated to a hearing.
-- **FR11 — hearing updates:** the same payload re-sent when an allocation is amended.
+- **Hearing confirmation:** the `confirmedHearing` payload CP sends to Libra (GoB) when an enforcement
+  case is allocated to a court hearing.
+- **Hearing updates:** the same payload re-sent when an allocation is amended.
 
 The spec is published as a generated artefact (OpenAPI generator) and consumed by the service as a
 dependency, following the established `api-cp-crime-*` / `service-cp-crime-*` pairing.
@@ -17,8 +17,8 @@ dependency, following the established `api-cp-crime-*` / `service-cp-crime-*` pa
 > [`api-hmcts-crime-template`](https://github.com/hmcts/api-hmcts-crime-template).
 
 > ⚠️ **Draft.** `src/main/resources/openapi/openapi-spec.yml` currently carries a draft
-> `confirmedHearing` contract. The authoritative Libra-side endpoint contract is owned by Libra
-> (mirrors the `/cases/results` situation) and must be reconciled — see the design doc §11.
+> `confirmedHearing` contract. The authoritative Libra-side endpoint contract is owned by Libra and
+> must be reconciled.
 
 ## Naming
 
