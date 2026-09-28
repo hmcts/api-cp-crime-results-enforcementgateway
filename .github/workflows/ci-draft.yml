@@ -5,10 +5,12 @@ on:
     branches:
       - master
       - main
+      - 'team/**'
   push:
     branches:
       - master
       - main
+      - 'team/**'
 
 env:
   FILE_PATH_OPENAPI: "src/main/resources/openapi"
