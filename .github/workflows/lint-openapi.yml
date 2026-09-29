@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - 'team/**'   # ci-draft.yml publishes artefacts from team/** branches, so lint them too
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 

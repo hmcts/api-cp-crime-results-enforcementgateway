@@ -4,11 +4,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.api.EnforcementHearingApi;
 import uk.gov.hmcts.cp.openapi.model.ConfirmedHearing;
+import uk.gov.hmcts.cp.openapi.model.DefendantDetails;
+import uk.gov.hmcts.cp.openapi.model.EnforcementDetails;
+import uk.gov.hmcts.cp.openapi.model.HearingResult;
+import uk.gov.hmcts.cp.openapi.model.PaymentTerms;
 import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 import uk.gov.hmcts.cp.openapi.model.HearingResultedRequest;
 import uk.gov.hmcts.cp.openapi.model.HearingResultedResponse;
 import uk.gov.hmcts.cp.openapi.model.NowsDataItemName;
 import uk.gov.hmcts.cp.openapi.model.NowsDataItems;
+import jakarta.validation.Valid;
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -100,5 +108,56 @@ class OpenApiObjectsTest {
 
         assertThat(models).hasSizeGreaterThan(30);
         assertThat(sizedEnumGetters).isEmpty();
+    }
+
+    @Test
+    void generated_hearing_resulted_response_timestamp_should_be_instant() throws Exception {
+        assertThat(HearingResultedResponse.class.getDeclaredField("timestamp").getType()).isEqualTo(Instant.class);
+    }
+
+    @Test
+    void nows_data_request_should_stay_optional() throws Exception {
+        // LOCAL AMENDMENT (1) in openapi-spec.yml: a re-copy from Libra v0.4.0 would make it required again
+        final Method getter = HearingResultedRequest.class.getMethod("getNowsDataRequest");
+
+        assertThat(getter.isAnnotationPresent(NotNull.class)).isFalse();
+        assertThat(getter.isAnnotationPresent(Valid.class)).isTrue();
+    }
+
+    @Test
+    void valid_hearing_resulted_request_should_have_no_violations() {
+        assertThat(violations(validRequest())).isEmpty();
+    }
+
+    @Test
+    void validation_should_cascade_into_nested_objects_and_lists() {
+        final HearingResultedRequest request = validRequest();
+        request.getDefendantDetails().setProsecutorDefendantId("1".repeat(37));
+        request.getResults().getFirst().setResultCode(null);
+
+        assertThat(violations(request)).containsExactlyInAnyOrder(
+                "defendantDetails.prosecutorDefendantId", "results[0].resultCode");
+    }
+
+    /** The smallest request the contract accepts: every required field, nothing else. */
+    private static HearingResultedRequest validRequest() {
+        return new HearingResultedRequest()
+                .caseUrn("E012345678")
+                .dateOfHearing(LocalDate.parse("2026-05-03"))
+                .courtHearingLocation("B01LY00")
+                .defendantDetails(new DefendantDetails().prosecutorDefendantId("1234567890").address1("1 High Street"))
+                .paymentTerms(new PaymentTerms().paymentDueDate(LocalDate.parse("2026-05-03"))
+                        .paymentCardRequested(PaymentTerms.PaymentCardRequestedEnum.N)
+                        .parentToPay(PaymentTerms.ParentToPayEnum.N))
+                .enforcement(new EnforcementDetails().prisonSentenceIndicator(EnforcementDetails.PrisonSentenceIndicatorEnum.N))
+                .results(new java.util.ArrayList<>(List.of(new HearingResult().resultCode(HearingResult.ResultCodeEnum.SC))));
+    }
+
+    private static List<String> violations(final HearingResultedRequest request) {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            return factory.getValidator().validate(request).stream()
+                    .map(violation -> violation.getPropertyPath().toString())
+                    .toList();
+        }
     }
 }
