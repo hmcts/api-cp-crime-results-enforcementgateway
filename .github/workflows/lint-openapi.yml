@@ -50,6 +50,11 @@ jobs:
       - name: Lint JSON schema example responses
         run: |
           shopt -s globstar nullglob
+          # this repo keeps its schemas inline in openapi-spec.yml: without the folder, find fails the step
+          if [ ! -d src/main/resources/openapi/schema ]; then
+            echo "✅ No schema directory, so no example JSON files to lint."
+            exit 0
+          fi
           files=$(find src/main/resources/openapi/schema -name "*.json" ! -name "*.example.json")
           if [ -z "$files" ]; then
             echo "✅ No example JSON files to lint."
