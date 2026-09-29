@@ -58,7 +58,8 @@ paths:
         APIM (operation "libra-hearingresulted" under the cppi-v4 API), which forwards it to Libra
         POST /hearing/result, and returns Libra's HearingResultedResponse body unchanged.
         Request/response schemas are copied from the Libra Gateway Hearing Event API v0.4.0
-        (CIMD-4246), with nowsDataRequest made optional as agreed with GoB (expected in v0.5.0).
+        (CIMD-4246), with two local amendments: nowsDataRequest made optional as agreed with GoB
+        (expected in v0.5.0), and maxLength removed from enum-typed properties (HV000030).
         DRAFT contract.
       operationId: postHearingResulted
       tags:

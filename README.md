@@ -9,6 +9,11 @@ contract used by the runtime service
 - **Hearing confirmation:** the `confirmedHearing` payload CP sends to Libra (GoB) when an enforcement
   case is allocated to a court hearing.
 - **Hearing updates:** the same payload re-sent when an allocation is amended.
+- **Hearing results (CIMD-4246):** `POST /hearingResulted`, called by
+  `service-cp-crime-results-enforcementworkflow` when an enforcement case defendant offence is resulted.
+  The gateway forwards the `HearingResultedRequest` to Libra (via APIM) and returns Libra's
+  `HearingResultedResponse` unchanged: `400` for a request that breaks the contract, `502` when Libra/APIM
+  fails, times out, or accepts with a reply that isn't a valid `HearingResultedResponse`.
 
 The spec is published as a generated artefact (OpenAPI generator) and consumed by the service as a
 dependency, following the established `api-cp-crime-*` / `service-cp-crime-*` pairing.
@@ -16,9 +21,20 @@ dependency, following the established `api-cp-crime-*` / `service-cp-crime-*` pa
 > Owned by the **cp-case-ingestion-and-material** team. Created from the HMCTS template
 > [`api-hmcts-crime-template`](https://github.com/hmcts/api-hmcts-crime-template).
 
-> ⚠️ **Draft.** `src/main/resources/openapi/openapi-spec.yml` currently carries a draft
-> `confirmedHearing` contract. The authoritative Libra-side endpoint contract is owned by Libra and
-> must be reconciled.
+> ⚠️ **Draft.** `src/main/resources/openapi/openapi-spec.yml` carries a draft `confirmedHearing`
+> contract, which must still be reconciled with Libra's `HearingConfirmedRequest`. The authoritative
+> Libra-side endpoint contract is owned by Libra.
+
+### Schemas copied from Libra
+
+The `HearingResultedRequest` … `CtBankDetails` schemas are copied **verbatim** from the Libra Gateway
+Hearing Event API v0.4.0 (see the header comment above `HearingResultedRequest` in the spec). Keep them in
+sync with Libra and do not edit them independently. There are two local amendments, each marked
+`LOCAL AMENDMENT` inline, which must be kept when re-copying:
+
+1. `nowsDataRequest` is optional in `HearingResultedRequest` (agreed with GoB; expected in v0.5.0).
+2. `maxLength` is removed from enum-typed properties: Bean Validation's `@Size` cannot validate an enum
+   (HV000030, a 500 on every request). `OpenApiObjectsTest` fails if a re-copy brings one back.
 
 ## Naming
 
