@@ -5,8 +5,11 @@ info:
     Contract for sending enforcement hearing events from Common Platform to Libra/GoB: hearing
     confirmation when a case is allocated to a court hearing (or an allocation is amended), and
     hearing results when an enforcement case defendant offence is resulted. DRAFT: the
-    authoritative endpoint contract is Libra-owned and must be reconciled.
-  version: 0.1.0
+    authoritative endpoint contract is Libra-owned and must be reconciled. It also defines the
+    internal enforcement-notification endpoint (POST /enforcement-notifications), called by the
+    results-processing Function App to notify service-cp-crime-results-enforcementworkflow of a share's
+    enforcement NOW requests.
+  version: 0.2.0
   contact:
     email: no-reply@hmcts.com
   license:
@@ -15,11 +18,15 @@ info:
 
 servers:
   - description: Draft — to be confirmed (Libra endpoint via APIM)
-    url: https://virtserver.swaggerhub.com/HMCTS-DTS/api-cp-crime-results-enforcementgateway/0.1.0
+    url: https://virtserver.swaggerhub.com/HMCTS-DTS/api-cp-crime-results-enforcementgateway/0.2.0
 
 tags:
   - name: enforcement-hearing
     description: Enforcement hearing events sent from Common Platform to Libra/GoB via Azure APIM
+  - name: enforcement-notification
+    description: >-
+      Notifications to service-cp-crime-results-enforcementworkflow from the results-processing Function App
+      (CIMD-4530). Implemented by the enforcement workflow, not by the gateway. Internal network only.
 
 paths:
   /confirmedHearing:
@@ -120,8 +127,127 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /enforcement-notifications:
+    post:
+      summary: Notify the enforcement workflow of a share's enforcement NOW requests
+      description: >-
+        Called by the results-processing Function App after it has created a share's enforcement NOW requests in
+        hearing-nows, each with a request id. The enforcement workflow stores the notification and processes it
+        asynchronously (results, GOB submission, GOB data event to hearing-nows). Internal network only; the caller
+        sends an allow-listed system user in CJSCPPUID. Implemented by service-cp-crime-results-enforcementworkflow
+        (CIMD-4530).
+      operationId: notifyEnforcementNows
+      tags:
+        - enforcement-notification
+      parameters:
+        - name: CJSCPPUID
+          in: header
+          required: true
+          description: System user id of the caller; must be in the workflow's allow-list.
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnforcementNotification"
+            example:
+              hearingId: "6f1c2b9e-0000-4000-8000-000000000001"
+              hearingDate: "2026-10-19"
+              isReshare: false
+              nows:
+                - requestId: "1d2c3b4a-0000-4000-8000-0000000000a1"
+                  masterDefendantId: "9a8b7c6d-0000-4000-8000-0000000000d1"
+      responses:
+        '202':
+          description: >-
+            Accepted (stored and queued), or a repeat of an already accepted notification (same request ids), in
+            which case the existing notificationId is returned and nothing new is queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationAccepted"
+        '400':
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '403':
+          description: Missing or not allow-listed CJSCPPUID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '409':
+          description: Some, but not all, request ids belong to an earlier notification, or the request ids belong to a notification for another hearing, hearing date or isReshare value.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '503':
+          description: The notification cannot be stored; the caller retries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
+    EnforcementNotification:
+      description: A share's enforcement NOW requests, sent by the results-processing Function App (CIMD-4530).
+      type: object
+      additionalProperties: false
+      required:
+        - hearingId
+        - hearingDate
+        - isReshare
+        - nows
+      properties:
+        hearingId:
+          type: string
+          format: uuid
+        hearingDate:
+          type: string
+          format: date
+          description: The hearing day of the share (yyyy-MM-dd).
+        isReshare:
+          type: boolean
+          description: >-
+            True for an amend & reshare. The enforcement workflow never sends an amend & reshare to GOB; it passes the
+            GOB data received for the first-time result to hearing-nows (CIMD-4530, decided 2026-10-22).
+        nows:
+          type: array
+          description: The share's enforcement NOW requests. requestId values must be unique (400 otherwise).
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/EnforcementNow"
+    EnforcementNow:
+      description: One enforcement NOW request created in hearing-nows.
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - masterDefendantId
+      properties:
+        requestId:
+          type: string
+          format: uuid
+          description: Request id the Function App gave the NOW request in hearing-nows.
+        masterDefendantId:
+          type: string
+          format: uuid
+    NotificationAccepted:
+      type: object
+      required:
+        - notificationId
+      properties:
+        notificationId:
+          type: string
+          format: uuid
     ConfirmedHearing:
       description: Confirmed enforcement hearing details sent to Libra/GoB.
       type: object
@@ -543,52 +669,11 @@ components:
       properties:
         resultCode:
           type: "string"
-          enum:
-            - "ABDC"
-            - "ACF"
-            - "ACNOTE"
-            - "ACON"
-            - "ADJNN"
-            - "AEC"
-            - "AEO"
-            - "AEOC"
-            - "BPOC"
-            - "BWTD"
-            - "BWTU"
-            - "BPOCRFSD"
-            - "CLAMPO"
-            - "COLLO"
-            - "CSC"
-            - "CW"
-            - "CWN"
-            - "DW"
-            - "FIDIC"
-            - "FIDICT"
-            - "FIDIP"
-            - "FSN"
-            - "FTTP"
-            - "MP"
-            - "MPSO"
-            - "NBWT"
-            - "NOENF"
-            - "ORD"
-            - "PTNV"
-            - "REGF"
-            - "REM"
-            - "REMCC"
-            - "REMF"
-            - "RT"
-            - "S136"
-            - "SC"
-            - "SUMM"
-            - "TEXT"
-            - "ENF TEXT"
-            - "TFOOUT"
-            - "WDN"
-            - "WDRN"
-          # LOCAL AMENDMENT (CIMD-4246): maxLength: 10 removed. The enum already bounds the value, and the
-          # generated @Size cannot validate an enum type (HV000030). Keep when re-copying from Libra.
-          description: "A coded value representing the outcome of an enforcement hearing, supplied by Common Platform. Business rules: Selected and applied in CP at hearing conclusion and sent to GoB via the HearingResulted API; mapped to GoB enforcement outcomes via reference data. GoB only uses these results: ABDC, AEO, AEOC, BWTD, BWTU, CLAMPO, COLLO, CW, CWN, DW, FSN, MPSO, NBWT, NOENF, REGF, REM, S136, SC, SUMM, TFOOUT, WDN. TFOOUT (GOB) = TFOUT (CP) DW (GOB) = WC (CP) WDN (GOB) = WWDN (CP) Source: HearingResultedRequest row 58 (from extracted workbook JSON)"
+          maxLength: 10
+          # LOCAL AMENDMENT (CIMD-4530, 2026-10-22): the enum of GOB-used codes is removed; every CP result code is
+          # sent, as agreed with the GOB/Libra team (the codes GoB uses are listed in the description). Libra's
+          # maxLength 10 is back. Re-copy from Libra once they publish the agreed version.
+          description: "A coded value representing the outcome of an enforcement hearing, supplied by Common Platform. Business rules: Selected and applied in CP at hearing conclusion and sent to GoB via the HearingResulted API; mapped to GoB enforcement outcomes via reference data. Codes GoB used before 2026-10-22: ABDC, AEO, AEOC, BWTD, BWTU, CLAMPO, COLLO, CW, CWN, DW, FSN, MPSO, NBWT, NOENF, REGF, REM, S136, SC, SUMM, TFOOUT, WDN; any CP result code is sent (CIMD-4530). TFOOUT (GOB) = TFOUT (CP) DW (GOB) = WC (CP) WDN (GOB) = WWDN (CP) Source: HearingResultedRequest row 58 (from extracted workbook JSON)"
           x-source-row: 58
           x-source-data-attribute: "resultCode"
         enforcerCode:
