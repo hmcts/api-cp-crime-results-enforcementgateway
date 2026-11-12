@@ -695,7 +695,9 @@ components:
       required:
         - "caseUrn"
         - "timestamp"
-        - "nowsDataItems"
+        # LOCAL AMENDMENT (CIMD-4611, 2026-11-11): nowsDataItems removed from `required`, as in Libra's contract
+        # v0.6.0: when the request has no nowsDataRequest, the reply has no nowsDataItems. Re-copy from Libra once
+        # they publish the agreed version.
       properties:
         caseUrn:
           type: "string"
