@@ -276,12 +276,17 @@ components:
           example: "10:00"
 
     # ---------------------------------------------------------------------------------------
-    # Hearing resulted (CIMD-4246). Copied verbatim from Libra Gateway Hearing Event API
-    # v0.4.0 (service-cp-crime-results-enforcementworkflow/specs/001-cimd-4246-hearing-resulted-to-libra/docs/
-    # libra-gateway-hearing-events-openapi-v0.4.0.yml, schemas HearingResultedRequest ..
-    # CtBankDetails). Keep in sync with Libra contract updates - do not edit independently.
-    # Local amendments (keep when re-copying): (1) nowsDataRequest optional (GOB-agreed, v0.5.0);
-    # (2) maxLength removed from enum-typed properties (see inline LOCAL AMENDMENT comments).
+    # Hearing resulted (CIMD-4246). Copied from Libra Gateway Hearing Event API, aligned with Libra's v0.8.0
+    # (2026-11-18, CIMD-4251; service-cp-crime-results-enforcementworkflow/specs/docs/
+    # libra-gateway-hearing-events-openapi-v0.8.0.yml, schemas HearingResultedRequest .. CtBankDetails).
+    # Keep in sync with Libra contract updates - do not edit independently.
+    # Local amendments (keep when re-copying): (1) nowsDataRequest optional (GOB-agreed, v0.5.0; also in v0.8.0);
+    # (2) maxLength removed from enum-typed properties (see inline LOCAL AMENDMENT comments);
+    # (3) paymentTerms optional (CIMD-4251; also in v0.6.0 and v0.8.0).
+    # Aligned with v0.8.0 on 2026-11-18: PaymentTerms.paymentTerms renamed instalmentFrequency (Libra's name since
+    # v0.6.0); NowsDataRequest.nowsDataItems no longer in `required` (as in v0.8.0; minItems 1 kept).
+    # Terms.english_instalmetPaymentPeriod renamed english_instalmentPaymentPeriod (v0.8.0 spelling, 2026-11-18);
+    # hearing-nows, the workflow and the simulator take the same name.
     # ---------------------------------------------------------------------------------------
     HearingResultedRequest:
       type: "object"
@@ -291,7 +296,6 @@ components:
         - "dateOfHearing"
         - "courtHearingLocation"
         - "defendantDetails"
-        - "paymentTerms"
         - "enforcement"
         - "results"
       properties:
@@ -321,6 +325,9 @@ components:
           $ref: "#/components/schemas/ParentGuardianDetails"
         paymentTerms:
           $ref: "#/components/schemas/PaymentTerms"
+          # LOCAL AMENDMENT (CIMD-4251, 2026-11-15): paymentTerms removed from `required`, as in Libra's contract
+          # v0.6.0 and CIMD-4251 AC2: CP omits paymentTerms when no payment terms result was captured. When sent,
+          # paymentDueDate, paymentCardRequested and parentToPay are still required (PaymentTerms.required).
         enforcement:
           $ref: "#/components/schemas/EnforcementDetails"
         results:
@@ -549,7 +556,8 @@ components:
       type: "object"
       additionalProperties: false
       properties:
-        paymentTerms:
+        instalmentFrequency:
+          # Libra's name since v0.6.0 (was paymentTerms in v0.4.0); aligned with v0.8.0 on 2026-11-18 (CIMD-4251).
           type: "string"
           enum:
             - "W"
@@ -559,7 +567,7 @@ components:
           # generated @Size cannot validate an enum type (HV000030). Keep when re-copying from Libra.
           description: "Instalment frequency Business rules: Value must be W (Weekly), M (Monthly) or F (Fortnightly) and is set by court in CP Required - If payment terms have changed, then GOB needs to know what they are. This is required irrespective of the result code. 04/06 These enforcement results have payment terms: SC, MPSO and FTTP 03/06 All results that have payment data should complete the PAYMENT fields in the HearingRequestRequest in the API - even if the actual result is discarded by GOB. For example, FTTP is not added as a transaction on the GOB account, but the payment fields will still be updated on the hearing. Source: HearingResultedRequest row 41 (from extracted workbook JSON)"
           x-source-row: 41
-          x-source-data-attribute: "paymentTerms"
+          x-source-data-attribute: "instalmentFrequency"
         paymentDueDate:
           type: "string"
           format: "date"
@@ -737,8 +745,7 @@ components:
     NowsDataRequest:
       type: "object"
       additionalProperties: false
-      required:
-        - "nowsDataItems"
+      # nowsDataItems not in `required`, as in Libra v0.8.0 (aligned 2026-11-18); minItems 1 still applies when sent.
       properties:
         nowsDataItems:
           type: "array"
@@ -1409,7 +1416,8 @@ components:
           x-source-table: 20
           x-source-row: 4
           x-source-data-item: "Payment Lumpsum (English)"
-        english_instalmetPaymentPeriod:
+        english_instalmentPaymentPeriod:
+          # Libra v0.8.0 spelling (was english_instalmetPaymentPeriod up to v0.6.0); aligned 2026-11-18.
           type: "string"
           description: "Notes: ENUM(Weekly, Fortnightly, Monthly) TBC exactly Source: NOWS Logical Entities v1.3 table 20, row 5"
           x-source-table: 20
